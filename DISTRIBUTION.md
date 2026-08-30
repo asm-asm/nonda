@@ -15,6 +15,13 @@
 
 `Documents\\NondaSigning` フォルダーを安全な場所へ必ずバックアップしてください。このフォルダーを失うと、利用者がアプリを上書き更新できなくなります。
 
+パスワードファイルは現在のWindowsユーザーだけが開ける暗号化形式です。パソコンの故障に備え、次の操作で表示したパスワードをパスワード管理アプリにも保存してください。表示したパスワードは他人へ送ったり、GitHubへ登録したりしないでください。
+
+```powershell
+$credentialPath = Join-Path ([Environment]::GetFolderPath("MyDocuments")) "NondaSigning\\nonda-signing-credential.xml"
+(Import-Clixml -LiteralPath $credentialPath).GetNetworkCredential().Password
+```
+
 Android Studioから別の署名鍵を作成する場合は、次の手順を使用します。
 
 Android Studioで次の順に操作します。
