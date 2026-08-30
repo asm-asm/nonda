@@ -1,0 +1,16 @@
+# Android Studio / Gradle
+.gradle/
+.idea/
+.kotlin/
+build/
+app/build/
+local.properties
+
+# Signing keys and secrets (never upload these)
+*.jks
+*.keystore
+keystore.properties
+
+# OS files
+.DS_Store
+Thumbs.db

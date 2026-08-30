@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Androidアプリ『飲んだ？』の初心者向けダウンロード・インストール案内">
+  <title>飲んだ？｜かんたんインストール</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="shell">
+    <p class="eyebrow">ANDROID お薬リマインダー</p>
+    <h1>飲んだ？</h1>
+    <p class="lead">朝と夜のお薬を忘れないための、シンプルな記録アプリです。下のボタンから最新版をダウンロードできます。</p>
+    <a class="button" id="download" href="#install">最新版をダウンロード</a>
+    <p class="small-note">Androidスマートフォン専用です。iPhoneにはインストールできません。</p>
+  </header>
+
+  <main class="shell">
+    <div class="notice">
+      <strong>安心して使えます</strong><br>
+      服用記録と設定はスマートフォン内だけに保存されます。インターネットへ送信しません。
+    </div>
+
+    <section id="install">
+      <p class="eyebrow">INSTALL</p>
+      <h2>インストール方法</h2>
+      <ol class="steps">
+        <li>
+          <h3>APKをダウンロード</h3>
+          <p>上のボタンを押し、GitHubの「Assets」にある <strong>.apk</strong> ファイルを選びます。</p>
+        </li>
+        <li>
+          <h3>ダウンロードを続ける</h3>
+          <p>「危険なファイルの可能性があります」と表示された場合は、配布元が正しいことを確認して「ダウンロードを続行」を押します。</p>
+        </li>
+        <li>
+          <h3>ダウンロードしたファイルを開く</h3>
+          <p>通知、Chromeのダウンロード一覧、または「マイファイル」のダウンロードフォルダーからAPKを開きます。</p>
+        </li>
+        <li>
+          <h3>この提供元を許可</h3>
+          <p>初回だけ設定画面が開きます。「この提供元を許可」をオンにして戻り、「インストール」を押します。</p>
+        </li>
+        <li>
+          <h3>通知を許可</h3>
+          <p>アプリを開き、通知の許可画面で「許可」を押します。許可しないとお薬の時間にお知らせできません。</p>
+        </li>
+        <li>
+          <h3>時刻を確認</h3>
+          <p>アプリの「設定」で朝・夜の時刻と通知音を確認したら準備完了です。</p>
+        </li>
+      </ol>
+    </section>
+
+    <section>
+      <p class="eyebrow">SAMSUNG</p>
+      <h2>通知が遅れるとき</h2>
+      <div class="card">
+        <p>Samsung端末では、省電力設定によって通知が遅れる場合があります。</p>
+        <ol>
+          <li>端末の「設定」→「アプリ」→「飲んだ？」を開く</li>
+          <li>「バッテリー」→「制限なし」を選ぶ</li>
+          <li>「通知」が許可されていることを確認する</li>
+        </ol>
+      </div>
+    </section>
+
+    <section>
+      <p class="eyebrow">UPDATE</p>
+      <h2>更新方法</h2>
+      <div class="card">
+        <p>新しいバージョンも同じダウンロードボタンから入手できます。新しいAPKを開いて「更新」を押してください。通常は服用記録と設定がそのまま残ります。</p>
+        <p class="small-note">先にアプリをアンインストールすると記録が消えるため、更新時はアンインストールしないでください。</p>
+      </div>
+    </section>
+
+    <section>
+      <p class="eyebrow">FAQ</p>
+      <h2>よくある質問</h2>
+      <div class="card">
+        <details>
+          <summary>Playストアにないのはなぜ？</summary>
+          <p>現在は個人配布版のため、GitHubからAPKをインストールする方式です。</p>
+        </details>
+        <details>
+          <summary>「不明なアプリ」と表示されます</summary>
+          <p>Playストア以外から入れるAndroidアプリに表示される標準の確認です。このページから公式GitHub Releaseへ移動したことを確認してください。</p>
+        </details>
+        <details>
+          <summary>通知音を止めるには？</summary>
+          <p>通知を開いて「飲んだ」または「音を止める」を押してください。</p>
+        </details>
+        <details>
+          <summary>記録は誰かに送られますか？</summary>
+          <p>送られません。記録と設定は端末内だけに保存されます。</p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell">服用方法や服用量については、医師・薬剤師の指示に従ってください。</div>
+  </footer>
+
+  <script>
+    (() => {
+      const button = document.getElementById('download');
+      const isPages = location.hostname.endsWith('.github.io');
+      const owner = location.hostname.split('.')[0];
+      const repo = location.pathname.split('/').filter(Boolean)[0];
+      if (isPages && owner && repo) {
+        button.href = `https://github.com/${owner}/${repo}/releases/latest`;
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <application android:theme="@style/Theme.Nonda" android:label="飲んだ？" android:icon="@drawable/ic_launcher_foreground" android:allowBackup="true" android:supportsRtl="true">
+        <activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
+        <activity android:name=".widget.WidgetTakeActivity" android:exported="false" android:excludeFromRecents="true" android:noHistory="true" android:theme="@style/Theme.Nonda.Transparent" />
+        <receiver android:name=".notification.MedicationReceiver" android:exported="false" />
+        <service android:name=".notification.MedicationAlarmService" android:exported="false" android:foregroundServiceType="mediaPlayback" />
+        <receiver android:name=".notification.AlarmReceiver" android:exported="false" />
+        <receiver android:name=".notification.ReminderReceiver" android:exported="false" />
+        <receiver android:name=".notification.BootReceiver" android:exported="true"><intent-filter><action android:name="android.intent.action.BOOT_COMPLETED"/><action android:name="android.intent.action.TIME_SET"/><action android:name="android.intent.action.TIMEZONE_CHANGED"/></intent-filter></receiver>
+        <receiver android:name=".widget.MedicationWidgetReceiver" android:exported="true"><intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE"/></intent-filter><meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info"/></receiver>
+    </application>
+</manifest>

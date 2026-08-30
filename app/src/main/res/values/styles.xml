@@ -1,0 +1,4 @@
+<resources>
+    <style name="Theme.Nonda" parent="android:style/Theme.Material.Light.NoActionBar"><item name="android:fontFamily">sans</item><item name="android:colorAccent">#6E5A91</item></style>
+    <style name="Theme.Nonda.Transparent" parent="android:style/Theme.Material.Light.NoActionBar"><item name="android:windowIsTranslucent">true</item><item name="android:windowNoTitle">true</item><item name="android:backgroundDimEnabled">false</item><item name="android:windowIsFloating">true</item><item name="android:windowDisablePreview">true</item><item name="android:colorBackground">@android:color/transparent</item></style>
+</resources>
