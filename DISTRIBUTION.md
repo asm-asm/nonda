@@ -7,6 +7,16 @@
 
 ## 1. 配布用APKを作る
 
+このプロジェクトでは、初回の署名鍵を `Documents\\NondaSigning` に保存しています。今後はプロジェクトのルートで次を実行すると、同じ鍵でRelease APKを作成できます。
+
+```powershell
+.\build-release.ps1
+```
+
+`Documents\\NondaSigning` フォルダーを安全な場所へ必ずバックアップしてください。このフォルダーを失うと、利用者がアプリを上書き更新できなくなります。
+
+Android Studioから別の署名鍵を作成する場合は、次の手順を使用します。
+
 Android Studioで次の順に操作します。
 
 1. 上部メニューの `Build` → `Generate Signed App Bundle or APK` を開く

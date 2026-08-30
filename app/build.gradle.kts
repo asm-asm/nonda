@@ -1,8 +1,24 @@
 plugins { id("com.android.application"); id("org.jetbrains.kotlin.android"); id("org.jetbrains.kotlin.plugin.compose"); id("com.google.devtools.ksp") }
 
+val nondaKeystorePath = System.getenv("NONDA_KEYSTORE_PATH")
+val nondaKeystorePassword = System.getenv("NONDA_KEYSTORE_PASSWORD")
+val nondaKeyAlias = System.getenv("NONDA_KEY_ALIAS")
+val nondaKeyPassword = System.getenv("NONDA_KEY_PASSWORD")
+val hasReleaseSigning = listOf(nondaKeystorePath, nondaKeystorePassword, nondaKeyAlias, nondaKeyPassword).all { !it.isNullOrBlank() }
+
 android { namespace = "jp.okusuri.nonda"; compileSdk = 35
     defaultConfig { applicationId = "jp.okusuri.nonda"; minSdk = 26; targetSdk = 35; versionCode = 2; versionName = "1.1.0"; testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }
-    buildTypes { release { isMinifyEnabled = false } }
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(nondaKeystorePath!!)
+                storePassword = nondaKeystorePassword
+                keyAlias = nondaKeyAlias
+                keyPassword = nondaKeyPassword
+            }
+        }
+    }
+    buildTypes { release { isMinifyEnabled = false; signingConfig = signingConfigs.findByName("release") } }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true; buildConfig = true }
