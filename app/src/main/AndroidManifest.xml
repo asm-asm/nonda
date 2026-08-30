@@ -5,7 +5,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <application android:theme="@style/Theme.Nonda" android:label="飲んだ？" android:icon="@drawable/ic_launcher_foreground" android:allowBackup="true" android:supportsRtl="true">
+    <application android:theme="@style/Theme.Nonda" android:label="飲んだ？" android:icon="@drawable/ic_launcher_foreground" android:allowBackup="false" android:usesCleartextTraffic="false" android:supportsRtl="true">
         <activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
         <activity android:name=".widget.WidgetTakeActivity" android:exported="false" android:excludeFromRecents="true" android:noHistory="true" android:theme="@style/Theme.Nonda.Transparent" />
         <receiver android:name=".notification.MedicationReceiver" android:exported="false" />
