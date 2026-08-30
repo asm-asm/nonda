@@ -12,8 +12,8 @@
     <p class="eyebrow">ANDROID お薬リマインダー</p>
     <h1>飲んだ？</h1>
     <p class="lead">朝と夜のお薬を忘れないための、シンプルな記録アプリです。下のボタンから最新版をダウンロードできます。</p>
-    <a class="button" id="download" href="#install">最新版をダウンロード</a>
-    <p class="small-note">Androidスマートフォン専用です。iPhoneにはインストールできません。</p>
+    <a class="button" id="download" href="#install" aria-describedby="download-status">最新版をダウンロード</a>
+    <p class="small-note" id="download-status">Androidスマートフォン専用です。iPhoneにはインストールできません。</p>
   </header>
 
   <main class="shell">
@@ -107,11 +107,36 @@
     (() => {
       const button = document.getElementById('download');
       const isPages = location.hostname.endsWith('.github.io');
+      if (!isPages) return;
+
       const owner = location.hostname.split('.')[0];
       const repo = location.pathname.split('/').filter(Boolean)[0];
-      if (isPages && owner && repo) {
-        button.href = `https://github.com/${owner}/${repo}/releases/latest`;
-      }
+      const status = document.getElementById('download-status');
+      button.removeAttribute('href');
+      button.classList.add('is-disabled');
+      button.setAttribute('aria-disabled', 'true');
+      button.textContent = 'APKを確認しています…';
+
+      fetch(`https://api.github.com/repos/${owner}/${repo}/releases/latest`, {
+        headers: { Accept: 'application/vnd.github+json' }
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('release not found');
+          return response.json();
+        })
+        .then(release => {
+          const apk = release.assets.find(asset => asset.name.toLowerCase().endsWith('.apk'));
+          if (!apk) throw new Error('apk not found');
+          button.href = apk.browser_download_url;
+          button.classList.remove('is-disabled');
+          button.removeAttribute('aria-disabled');
+          button.textContent = `最新版 ${release.tag_name} をダウンロード`;
+          status.textContent = 'Androidスマートフォン専用です。ボタンを押すとAPKを直接ダウンロードします。';
+        })
+        .catch(() => {
+          button.textContent = 'APKは公開準備中です';
+          status.textContent = 'ダウンロードの準備ができ次第、このボタンから入手できるようになります。';
+        });
     })();
   </script>
 </body>

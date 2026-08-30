@@ -73,6 +73,12 @@ h1 {
 
 .button:hover, .button:focus-visible { background: var(--accent-dark); }
 
+.button.is-disabled {
+  opacity: 0.65;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
 .small-note { color: var(--muted); font-size: 0.9rem; }
 
 main { padding-bottom: 72px; }
