@@ -30,8 +30,10 @@
         <TextView
             android:id="@+id/widget_status"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:layout_marginTop="2dp"
+            android:gravity="center_vertical"
             android:maxLines="2"
             android:text="次は 08:00"
             android:textColor="@color/widget_text_secondary"
@@ -40,7 +42,7 @@
         <TextView
             android:id="@+id/widget_take"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
+            android:layout_height="42dp"
             android:layout_marginTop="4dp"
             android:background="@drawable/widget_button_background"
             android:clickable="true"

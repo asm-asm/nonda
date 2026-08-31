@@ -31,18 +31,31 @@ import jp.okusuri.nonda.update.AppUpdateScheduler
 import jp.okusuri.nonda.update.AvailableUpdate
 import jp.okusuri.nonda.update.UpdateCheckResult
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
 import java.text.SimpleDateFormat
 import java.util.*
 
 class MainActivity : ComponentActivity() {
     private val permission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    private val openedAlarm = MutableStateFlow<String?>(null)
     override fun onResume() { super.onResume(); MedicationScheduler.schedule(this); jp.okusuri.nonda.widget.MedicationWidgetReceiver.refresh(this) }
-    override fun onCreate(b: Bundle?) { super.onCreate(b); if (android.os.Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) permission.launch(Manifest.permission.POST_NOTIFICATIONS); MedicationNotifications.channel(this); MedicationScheduler.schedule(this); AppUpdateScheduler.schedule(this); setContent { NondaApp() } }
+    override fun onCreate(b: Bundle?) { super.onCreate(b); handleAlarmIntent(intent); if (android.os.Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) permission.launch(Manifest.permission.POST_NOTIFICATIONS); MedicationNotifications.channel(this); MedicationScheduler.schedule(this); AppUpdateScheduler.schedule(this); setContent { NondaApp() } }
+    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); setIntent(intent); handleAlarmIntent(intent) }
+
+    private fun handleAlarmIntent(source: Intent?) {
+        if (source?.action != MedicationNotifications.ACTION_OPEN_ALARM) return
+        openedAlarm.value = source.getStringExtra(MedicationNotifications.EXTRA_TYPE)
+        source.action = null
+        source.removeExtra(MedicationNotifications.EXTRA_TYPE)
+    }
+
     @Composable fun NondaApp() {
         val db = remember { AppDatabase.get(this) }
         val settingsStore = remember { SettingsStore(this) }
         val records by db.medicationDao().all().collectAsState(emptyList())
+        val notificationEvents by db.notificationEventDao().all().collectAsState(emptyList())
         val settings by settingsStore.flow.collectAsState()
+        val openedAlarmType by openedAlarm.collectAsState()
         var tab by remember { mutableIntStateOf(0) }
         var availableUpdate by remember { mutableStateOf<AvailableUpdate?>(null) }
         val scope = rememberCoroutineScope()
@@ -51,18 +64,19 @@ class MainActivity : ComponentActivity() {
             val result = AppUpdateChecker.check(this@MainActivity)
             if (result is UpdateCheckResult.Available) availableUpdate = result.update
         }
+        LaunchedEffect(openedAlarmType) { if (openedAlarmType != null) tab = 0 }
 
         MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) {
             Scaffold(bottomBar = { NavigationBar { listOf("今日" to Icons.Default.Today, "履歴" to Icons.Default.History, "設定" to Icons.Default.Settings).forEachIndexed { i, x -> NavigationBarItem(tab == i, { tab = i }, icon = { Icon(x.second, null) }, label = { Text(x.first) }) } } }) { pad ->
                 Box(Modifier.padding(pad).fillMaxSize()) {
                     when (tab) {
                         0 -> Today(records, settings, take = { r -> scope.launch { recordTaken(this@MainActivity, r.doseType); MedicationNotifications.cancel(this@MainActivity, r.doseType); jp.okusuri.nonda.widget.MedicationWidgetReceiver.refresh(this@MainActivity) } }, undo = { r -> scope.launch { db.medicationDao().undoTake(r.id); jp.okusuri.nonda.widget.MedicationWidgetReceiver.refresh(this@MainActivity) } })
-                        1 -> History(records, db)
+                        1 -> History(records, notificationEvents, db)
                         else -> Settings(settings, settingsStore) { availableUpdate = it }
                     }
                 }
             }
-            availableUpdate?.let { update ->
+            if (openedAlarmType == null) availableUpdate?.let { update ->
                 AlertDialog(
                     onDismissRequest = { availableUpdate = null },
                     title = { Text("新しいバージョンがあります") },
@@ -76,10 +90,75 @@ class MainActivity : ComponentActivity() {
                     dismissButton = { TextButton(onClick = { availableUpdate = null }) { Text("あとで") } },
                 )
             }
+            openedAlarmType?.let { type ->
+                AlertDialog(
+                    onDismissRequest = {},
+                    title = { Text("${type}のお薬の時間です") },
+                    text = { Text("通知音を止めるか、飲んだ記録を付けてください。") },
+                    confirmButton = {
+                        Button(onClick = {
+                            scope.launch {
+                                recordTaken(this@MainActivity, type)
+                                MedicationNotifications.cancel(this@MainActivity, type)
+                                jp.okusuri.nonda.widget.MedicationWidgetReceiver.refresh(this@MainActivity)
+                                openedAlarm.value = null
+                            }
+                        }) { Text("飲んだ") }
+                    },
+                    dismissButton = {
+                        OutlinedButton(onClick = {
+                            MedicationNotifications.cancel(this@MainActivity, type)
+                            openedAlarm.value = null
+                        }) { Text("音を止める") }
+                    },
+                )
+            }
         }
     }
     @Composable private fun Today(records: List<MedicationRecord>, s: AppSettings, take: (MedicationRecord) -> Unit, undo: (MedicationRecord) -> Unit) { val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()); val today = records.filter { it.date == date }; LaunchedEffect(date, s.morning, s.evening) { val dao = AppDatabase.get(this@MainActivity).medicationDao(); dao.ensure(date, "朝", s.morning); dao.ensure(date, "夜", s.evening) }; LazyColumn(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) { item { Text("飲んだ？", style = MaterialTheme.typography.displaySmall); Text(SimpleDateFormat("M月d日（E）", Locale.JAPAN).format(Date()), style = MaterialTheme.typography.titleMedium) }; items(today) { r -> val taken = r.status == "TAKEN"; Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(20.dp)) { Text(r.doseType, style = MaterialTheme.typography.titleLarge); Text(r.scheduledAt, style = MaterialTheme.typography.displayMedium); if (taken) { Text("✓ 飲んだ ${r.takenAt}", color = MaterialTheme.colorScheme.primary); OutlinedButton({ undo(r) }, Modifier.fillMaxWidth().padding(top = 12.dp)) { Text("飲んだ記録を取り消す") } } else { Text(if (r.scheduledAt <= now()) "⚠ 飲み忘れ中" else "次は ${r.scheduledAt}"); Button({ take(r) }, Modifier.fillMaxWidth().padding(top = 12.dp)) { Text("飲んだ") } } } } }; item { Text("服用方法については医師・薬剤師の指示に従ってください", style = MaterialTheme.typography.bodySmall) } } }
-    @Composable private fun History(records: List<MedicationRecord>, db: AppDatabase) { val scope = rememberCoroutineScope(); LazyColumn(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { item { Text("履歴", style = MaterialTheme.typography.headlineMedium) }; items(records) { r -> Card(Modifier.fillMaxWidth()) { ListItem(headlineContent = { Text("${r.date}　${r.doseType}") }, supportingContent = { Text("予定 ${r.scheduledAt}　${if (r.status == "TAKEN") "✓ ${r.takenAt}" else "飲み忘れ"}") }, trailingContent = { IconButton({ scope.launch { db.medicationDao().delete(r.id) } }) { Icon(Icons.Default.Delete, "記録を削除") } }) } } } }
+    @Composable private fun History(records: List<MedicationRecord>, notificationEvents: List<NotificationEvent>, db: AppDatabase) {
+        val scope = rememberCoroutineScope()
+        LazyColumn(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            item { Text("履歴", style = MaterialTheme.typography.headlineMedium) }
+            item {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("通知履歴", style = MaterialTheme.typography.titleLarge)
+                    if (notificationEvents.isNotEmpty()) {
+                        TextButton(onClick = { scope.launch { db.notificationEventDao().clear() } }) { Text("消去") }
+                    }
+                }
+            }
+            if (notificationEvents.isEmpty()) {
+                item { Text("通知履歴はまだありません", style = MaterialTheme.typography.bodyMedium) }
+            } else {
+                items(notificationEvents, key = { "notification-${it.id}" }) { event ->
+                    val resultText = when (event.result) {
+                        "POSTED" -> "通知しました"
+                        "BLOCKED" -> "通知が許可されていません"
+                        else -> "通知に失敗しました"
+                    }
+                    Card(Modifier.fillMaxWidth()) {
+                        ListItem(
+                            headlineContent = { Text("${event.date}　${event.notifiedAt}") },
+                            supportingContent = { Text("${event.doseType}　$resultText") },
+                            leadingContent = { Icon(Icons.Default.Notifications, null) },
+                        )
+                    }
+                }
+            }
+            item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
+            item { Text("服薬記録", style = MaterialTheme.typography.titleLarge) }
+            items(records, key = { "record-${it.id}" }) { r ->
+                Card(Modifier.fillMaxWidth()) {
+                    ListItem(
+                        headlineContent = { Text("${r.date}　${r.doseType}") },
+                        supportingContent = { Text("予定 ${r.scheduledAt}　${if (r.status == "TAKEN") "✓ ${r.takenAt}" else "飲み忘れ"}") },
+                        trailingContent = { IconButton({ scope.launch { db.medicationDao().delete(r.id) } }) { Icon(Icons.Default.Delete, "記録を削除") } },
+                    )
+                }
+            }
+        }
+    }
     @Suppress("DEPRECATION")
     @Composable private fun Settings(s: AppSettings, store: SettingsStore, onUpdateFound: (AvailableUpdate) -> Unit) {
         var name by remember(s) { mutableStateOf(s.name) }

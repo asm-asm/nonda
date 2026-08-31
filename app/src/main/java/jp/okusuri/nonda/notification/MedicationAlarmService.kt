@@ -9,7 +9,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
+import jp.okusuri.nonda.MainActivity
 import jp.okusuri.nonda.data.SettingsStore
 
 class MedicationAlarmService : Service() {
@@ -54,13 +54,26 @@ class MedicationAlarmService : Service() {
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("薬の時間です")
             .setContentText("${type}の${settings.name}、飲んだ？")
+            .setStyle(NotificationCompat.BigTextStyle().bigText("${type}の${settings.name}、飲んだ？　下の「音を止める」または「飲んだ」を押してください。"))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
-            .setContentIntent(stopIntent(type))
-            .addAction(0, "飲んだ", takeIntent(type))
-            .addAction(0, "音を止める", stopIntent(type))
+            .setContentIntent(openAppIntent(type))
+            .addAction(android.R.drawable.ic_media_pause, "音を止める", stopIntent(type))
+            .addAction(android.R.drawable.checkbox_on_background, "飲んだ", takeIntent(type))
             .build()
+
+    private fun openAppIntent(type: String) = PendingIntent.getActivity(
+        this,
+        (type + "open").hashCode(),
+        Intent(this, MainActivity::class.java)
+            .setAction(MedicationNotifications.ACTION_OPEN_ALARM)
+            .putExtra(MedicationNotifications.EXTRA_TYPE, type)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
 
     private fun takeIntent(type: String) = PendingIntent.getBroadcast(
         this,

@@ -7,7 +7,7 @@ val nondaKeyPassword = System.getenv("NONDA_KEY_PASSWORD")
 val hasReleaseSigning = listOf(nondaKeystorePath, nondaKeystorePassword, nondaKeyAlias, nondaKeyPassword).all { !it.isNullOrBlank() }
 
 android { namespace = "jp.okusuri.nonda"; compileSdk = 35
-    defaultConfig { applicationId = "jp.okusuri.nonda"; minSdk = 26; targetSdk = 35; versionCode = 2; versionName = "1.1.0"; testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }
+    defaultConfig { applicationId = "jp.okusuri.nonda"; minSdk = 26; targetSdk = 35; versionCode = 3; versionName = "1.2.0"; testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }
     signingConfigs {
         if (hasReleaseSigning) {
             create("release") {

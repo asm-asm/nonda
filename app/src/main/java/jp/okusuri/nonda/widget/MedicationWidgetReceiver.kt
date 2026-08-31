@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 
 class MedicationWidgetReceiver : AppWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
+        MedicationWidgetScheduler.schedule(context)
         val pending = goAsync()
         scope.launch {
             updateAll(context, manager, ids)
@@ -53,16 +54,20 @@ class MedicationWidgetReceiver : AppWidgetProvider() {
             if (ids.isEmpty()) return
 
             val settings = SettingsStore(context).read()
-            val records = AppDatabase.get(context).medicationDao().forDate(day())
+            val dao = AppDatabase.get(context).medicationDao()
+            val today = day()
+            dao.ensure(today, "朝", settings.morning)
+            dao.ensure(today, "夜", settings.evening)
+            val records = dao.forDate(today)
             val morning = records.firstOrNull { it.doseType == "朝" }
             val evening = records.firstOrNull { it.doseType == "夜" }
             val current = now()
-            val pendingType = when {
-                current >= settings.evening && evening?.status != "TAKEN" -> "夜"
-                morning?.status != "TAKEN" -> "朝"
-                evening?.status != "TAKEN" -> "夜"
-                else -> null
-            }
+            val pendingType = WidgetDoseSelector.pendingType(
+                current = current,
+                eveningTime = settings.evening,
+                morningTaken = morning?.status == "TAKEN",
+                eveningTaken = evening?.status == "TAKEN",
+            )
             val status = statusText(
                 morning,
                 evening,
@@ -132,5 +137,19 @@ class MedicationWidgetReceiver : AppWidgetProvider() {
 
         private fun dp(context: Context, value: Int): Int =
             (value * context.resources.displayMetrics.density).toInt()
+    }
+}
+
+internal object WidgetDoseSelector {
+    fun pendingType(
+        current: String,
+        eveningTime: String,
+        morningTaken: Boolean,
+        eveningTaken: Boolean,
+    ): String? = when {
+        current >= eveningTime && !eveningTaken -> "夜"
+        !morningTaken -> "朝"
+        !eveningTaken -> "夜"
+        else -> null
     }
 }
