@@ -85,20 +85,31 @@ object MedicationNotifications {
             )
         )
     }
-    fun preview(c: Context) {
+    suspend fun preview(c: Context) {
         val s = SettingsStore(c).read()
         channel(c)
-        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(c, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(c, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            logEvent(c, "テスト", "BLOCKED")
+            return
+        }
+        val manager = NotificationManagerCompat.from(c)
+        if (!manager.areNotificationsEnabled()) {
+            logEvent(c, "テスト", "BLOCKED")
+            return
+        }
         val defaults = if (s.vibrationEnabled) NotificationCompat.DEFAULT_VIBRATE else 0
-        NotificationManagerCompat.from(c).notify(9090, NotificationCompat.Builder(c, channelId(s))
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("通知音のテスト")
-            .setContentText("お薬飲んでね")
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setDefaults(defaults)
-            .setSound(if (s.soundEnabled) soundUri(s) else null)
-            .setAutoCancel(true)
-            .build())
+        val posted = runCatching {
+            manager.notify(9090, NotificationCompat.Builder(c, channelId(s))
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle("通知音のテスト")
+                .setContentText("お薬飲んでね")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setDefaults(defaults)
+                .setSound(if (s.soundEnabled) soundUri(s) else null)
+                .setAutoCancel(true)
+                .build())
+        }.isSuccess
+        logEvent(c, "テスト", if (posted) "POSTED" else "FAILED")
     }
     fun cancel(c: Context, type: String) { c.stopService(Intent(c, MedicationAlarmService::class.java)); NotificationManagerCompat.from(c).cancel(type.hashCode()) }
 }

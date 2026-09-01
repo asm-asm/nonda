@@ -115,7 +115,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-    @Composable private fun Today(records: List<MedicationRecord>, s: AppSettings, take: (MedicationRecord) -> Unit, undo: (MedicationRecord) -> Unit) { val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()); val today = records.filter { it.date == date }; LaunchedEffect(date, s.morning, s.evening) { val dao = AppDatabase.get(this@MainActivity).medicationDao(); dao.ensure(date, "朝", s.morning); dao.ensure(date, "夜", s.evening) }; LazyColumn(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) { item { Text("飲んだ？", style = MaterialTheme.typography.displaySmall); Text(SimpleDateFormat("M月d日（E）", Locale.JAPAN).format(Date()), style = MaterialTheme.typography.titleMedium) }; items(today) { r -> val taken = r.status == "TAKEN"; Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(20.dp)) { Text(r.doseType, style = MaterialTheme.typography.titleLarge); Text(r.scheduledAt, style = MaterialTheme.typography.displayMedium); if (taken) { Text("✓ 飲んだ ${r.takenAt}", color = MaterialTheme.colorScheme.primary); OutlinedButton({ undo(r) }, Modifier.fillMaxWidth().padding(top = 12.dp)) { Text("飲んだ記録を取り消す") } } else { Text(if (r.scheduledAt <= now()) "⚠ 飲み忘れ中" else "次は ${r.scheduledAt}"); Button({ take(r) }, Modifier.fillMaxWidth().padding(top = 12.dp)) { Text("飲んだ") } } } } }; item { Text("服用方法については医師・薬剤師の指示に従ってください", style = MaterialTheme.typography.bodySmall) } } }
+    @Composable private fun Today(records: List<MedicationRecord>, s: AppSettings, take: (MedicationRecord) -> Unit, undo: (MedicationRecord) -> Unit) { val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()); val today = records.filter { it.date == date }; LaunchedEffect(date, s.morning, s.evening) { val dao = AppDatabase.get(this@MainActivity).medicationDao(); dao.ensure(date, "朝", s.morning); dao.ensure(date, "夜", s.evening) }; LazyColumn(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) { item { Text("飲んだ？", style = MaterialTheme.typography.displaySmall); Text("バージョン ${BuildConfig.VERSION_NAME}", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge); Text(SimpleDateFormat("M月d日（E）", Locale.JAPAN).format(Date()), style = MaterialTheme.typography.titleMedium) }; items(today) { r -> val taken = r.status == "TAKEN"; Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(20.dp)) { Text(r.doseType, style = MaterialTheme.typography.titleLarge); Text(r.scheduledAt, style = MaterialTheme.typography.displayMedium); if (taken) { Text("✓ 飲んだ ${r.takenAt}", color = MaterialTheme.colorScheme.primary); OutlinedButton({ undo(r) }, Modifier.fillMaxWidth().padding(top = 12.dp)) { Text("飲んだ記録を取り消す") } } else { Text(if (r.scheduledAt <= now()) "⚠ 飲み忘れ中" else "次は ${r.scheduledAt}"); Button({ take(r) }, Modifier.fillMaxWidth().padding(top = 12.dp)) { Text("飲んだ") } } } } }; item { Text("服用方法については医師・薬剤師の指示に従ってください", style = MaterialTheme.typography.bodySmall) } } }
     @Composable private fun History(records: List<MedicationRecord>, notificationEvents: List<NotificationEvent>, db: AppDatabase) {
         val scope = rememberCoroutineScope()
         LazyColumn(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -181,6 +181,7 @@ class MainActivity : ComponentActivity() {
         }
         Column(Modifier.padding(20.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("設定", style = MaterialTheme.typography.headlineMedium)
+            Text("アプリバージョン ${BuildConfig.VERSION_NAME}", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleMedium)
             OutlinedTextField(name, { name = it }, label = { Text("薬の名前") })
             OutlinedTextField(morning, { morning = it }, label = { Text("朝の服薬時刻（HH:mm）") })
             OutlinedTextField(evening, { evening = it }, label = { Text("夜の服薬時刻（HH:mm）") })
@@ -189,10 +190,9 @@ class MainActivity : ComponentActivity() {
             OutlinedButton({ soundUri = ZUNDAMON_SOUND_URI }, Modifier.fillMaxWidth(), enabled = sound) { Text("ずんだもん音声を使う") }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Column { Text("振動"); Text(if (vibration) "振動させる" else "振動させない", style = MaterialTheme.typography.bodySmall) }; Switch(vibration, { vibration = it }) }
             Button({ store.save(s.copy(name = name, morning = morning, evening = evening, soundEnabled = sound, vibrationEnabled = vibration, notificationSoundUri = soundUri)); MedicationNotifications.channel(this@MainActivity); MedicationScheduler.schedule(this@MainActivity) }, Modifier.fillMaxWidth()) { Text("保存") }
-            OutlinedButton({ store.save(s.copy(name = name, morning = morning, evening = evening, soundEnabled = sound, vibrationEnabled = vibration, notificationSoundUri = soundUri)); MedicationNotifications.preview(this@MainActivity) }, Modifier.fillMaxWidth()) { Text("通知音を試す") }
+            OutlinedButton({ store.save(s.copy(name = name, morning = morning, evening = evening, soundEnabled = sound, vibrationEnabled = vibration, notificationSoundUri = soundUri)); scope.launch { MedicationNotifications.preview(this@MainActivity) } }, Modifier.fillMaxWidth()) { Text("通知音を試す") }
             HorizontalDivider()
             Text("アプリの更新", style = MaterialTheme.typography.titleMedium)
-            Text("現在のバージョン：${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodySmall)
             OutlinedButton(
                 onClick = {
                     checkingUpdate = true
